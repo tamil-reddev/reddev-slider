@@ -31,7 +31,9 @@ function App() {
   const [sliderValues, setSlider] = useState([40,30,20,10]);
 
   const handleChange = (index, e) => {
-    setValue(e.target.value);
+    let updateSlider = [];
+    updateSlider[index] = e.target.value'
+    setSlider(updateSlider);
   }
 
   return ( 
