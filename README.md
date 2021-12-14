@@ -1,6 +1,10 @@
 ### Usage
 
 ```
+npm i reddev-slider
+```
+
+```
 import React, { useState } from 'react';
 import  { ReddevSlider } from 'reddev-slider';
 import './App.css';
