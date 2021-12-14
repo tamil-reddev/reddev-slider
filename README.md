@@ -1,6 +1,8 @@
 ### Usage
 
+```
 import ReddevSlider from './lib/components/ReddevSlider';
+
 
 //configure sliderValues
 
@@ -23,4 +25,23 @@ const sliders = [{
 }]
 
 // slider values
-const [sliderValues, setSlider] = useState([40,30,20,10]);
+
+function App() {
+
+  const [sliderValues, setSlider] = useState([40,30,20,10]);
+
+  const handleChange = (index, e) => {
+    setValue(e.target.value);
+  }
+
+  return ( 
+      <div className = "App">
+        <div className="cont">
+          <div className="sliders">
+              <ReddevSlider sliders={sliders} onChange={handleChange} sliderValues={sliderValues} />
+          </div>
+        </div>
+      </div> 
+    );
+}
+```
