@@ -2,8 +2,8 @@
 
 ```
 import React, { useState } from 'react';
-import ReddevSlider from './lib/components/ReddevSlider';
-
+import  { ReddevSlider } from 'reddev-slider';
+import './App.css';
 
 //configure sliderValues
 
