@@ -42,7 +42,7 @@ function App() {
   }
 
   return ( 
-      <div className = "App">
+      <div className="App">
         <ReddevSlider sliders={sliders} onChange={handleChange} sliderValues={sliderValues} />
       </div> 
     );

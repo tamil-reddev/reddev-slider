@@ -36,11 +36,7 @@ function App() {
 
   return ( 
       <div className = "App">
-        <div className="cont">
-          <div className="sliders">
-              <ReddevSlider sliders={sliders} onChange={handleChange} sliderValues={sliderValues} />
-          </div>
-        </div>
+        <ReddevSlider sliders={sliders} onChange={handleChange} sliderValues={sliderValues} />
       </div> 
     );
 }
