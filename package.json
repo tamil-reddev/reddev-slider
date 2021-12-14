@@ -2,22 +2,25 @@
   "name": "reddev-slider",
   "version": "0.1.2",
   "private": false,
-  "keywords": ["react", "slider", "scroll", "reddev"],
+  "keywords": [
+    "react",
+    "slider",
+    "scroll",
+    "reddev"
+  ],
   "main": "dist/index.js",
   "module": "dist/index.js",
-  "files": [ "dist", "README.md" ],
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "dependencies": {
-    "@babel/polyfill": "^7.12.1",
-    "@emotion/react": "^11.7.0",
+    "@emotion/react": "^11.7.1",
     "@emotion/styled": "^11.6.0",
     "@mui/material": "^5.2.2",
-    "@testing-library/jest-dom": "^5.11.4",
-    "@testing-library/react": "^11.1.0",
-    "@testing-library/user-event": "^12.1.10",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
-    "react-scripts": "4.0.3",
-    "web-vitals": "^1.0.1"
+    "react-scripts": "4.0.3"
   },
   "scripts": {
     "start": "react-scripts start",
