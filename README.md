@@ -1,6 +1,7 @@
 ### Usage
 
 ```
+import React, { useState } from 'react';
 import ReddevSlider from './lib/components/ReddevSlider';
 
 
@@ -31,9 +32,9 @@ function App() {
   const [sliderValues, setSlider] = useState([40,30,20,10]);
 
   const handleChange = (index, e) => {
-    let updateSlider = [];
-    updateSlider[index] = e.target.value'
-    setSlider(updateSlider);
+    let updatedSlider = [...sliderValues];
+    updatedSlider[index] = e.target.value
+    setSlider(updatedSlider);
   }
 
   return ( 
