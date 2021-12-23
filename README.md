@@ -9,7 +9,7 @@ Overwrite handleChange event like below to manage custom distribution
 ```
 import React, { useEffect, useState, useRef } from 'react';
 import './App.css';
-import ReddevSlider from './lib/components/ReddevSlider';
+import { ReddevSlider } from 'reddev-slider';
 
 //configure sliderValues
 
