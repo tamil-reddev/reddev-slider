@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import './App.css';
-import ReddevSlider from './lib/components/ReddevSlider';
+import { ReddevSlider } from './dist';
 
 //configure sliderValues
 

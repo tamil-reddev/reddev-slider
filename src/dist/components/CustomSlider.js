@@ -22,9 +22,11 @@ class CustomSlider extends _react.default.Component {
       className: "slider",
       color: this.props.color,
       sno: this.props.sno,
+      min: this.props.min,
       value: this.props.value,
-      defaultValue: this.props.default,
+      defaultValue: this.props.defaultValue,
       onChange: this.props.handleChange,
+      onChangeCommitted: this.props.handleChangeCommited,
       "aria-label": "Default",
       valueLabelDisplay: "auto"
     }));
