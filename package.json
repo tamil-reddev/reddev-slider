@@ -1,6 +1,6 @@
 {
   "name": "reddev-slider",
-  "version": "0.1.14",
+  "version": "0.1.15",
   "private": false,
   "keywords": [
     "react",
@@ -18,10 +18,15 @@
     "@emotion/react": "^11.7.1",
     "@emotion/styled": "^11.6.0",
     "@mui/material": "^5.2.2",
+    "@testing-library/jest-dom": "^5.16.1",
+    "@testing-library/react": "^12.1.2",
+    "@wojtekmaj/enzyme-adapter-react-17": "^0.6.6",
     "react": "^17.0.2",
-    "react-dom": "^17.0.2"
+    "react-dom": "^17.0.2",
+    "react-test-renderer": "^17.0.2"
   },
   "scripts": {
+    "qstart": "react-scripts start",
     "start": "NODE_ENV=production babel src/lib --out-dir src/dist --copy-files && react-scripts start",
     "build": "NODE_ENV=production babel src/lib --out-dir dist --copy-files",
     "test": "react-scripts test",
@@ -49,6 +54,9 @@
     "@babel/cli": "^7.16.0",
     "@babel/core": "^7.16.5",
     "@babel/preset-env": "^7.16.5",
+    "enzyme": "^3.11.0",
+    "enzyme-adapter-react-16": "^1.15.6",
+    "enzyme-to-json": "^3.6.2",
     "react-scripts": "4.0.3"
   }
 }

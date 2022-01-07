@@ -5,7 +5,6 @@ import Slider from '@mui/material/Slider';
 class CustomSlider extends React.Component {
     constructor(props) {
         super(props);
-        console.log(props);
     }
     render() {
         return <div>

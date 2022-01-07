@@ -14,7 +14,6 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 class CustomSlider extends _react.default.Component {
   constructor(props) {
     super(props);
-    console.log(props);
   }
 
   render() {

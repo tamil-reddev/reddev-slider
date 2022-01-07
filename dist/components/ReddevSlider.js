@@ -29,15 +29,20 @@ function ReddevSlider(props) {
   const [sliderValues, setSliderValues] = (0, _react.useState)(props.sliderValues); //Manage only on updates to avoid intial load update
 
   const isInitialMount = (0, _react.useRef)(true);
+  const logger = {
+    log: function log(msg) {
+      if (props.debug) console.log(msg);
+    }
+  };
 
   const handleChange = (sliderIndex, e) => {
-    console.log("New value : ".concat(e.target.value));
+    logger.log("New value : ".concat(e.target.value));
     setCurrentSliderValue(e.target.value);
     setSliderIndex(sliderIndex);
   };
 
   const handleChangeCommited = () => {
-    console.log("final committed value : ".concat(sliderValues));
+    logger.log("final committed value : ".concat(sliderValues));
   };
 
   (0, _react.useEffect)(() => {
@@ -47,13 +52,13 @@ function ReddevSlider(props) {
     if (isInitialMount.current) {
       isInitialMount.current = false;
     } else {
-      console.log("Before moving silder value ".concat(sliderValues));
+      logger.log("Before moving silder value ".concat(sliderValues));
       let totalValue = 100;
       let balanceAvailable = 0;
       let existingAllSliderArray = sliderValues;
       let existingSelectedSliderValue = existingAllSliderArray[sliderIndex];
       let difference = Math.abs(existingSelectedSliderValue - currentSliderValue);
-      console.log("Difference btw last and current value of moved sliderIndex ".concat(sliderIndex, ", ").concat(existingSelectedSliderValue, " - ").concat(currentSliderValue, " : ").concat(difference)); //Below slider
+      logger.log("Difference btw last and current value of moved sliderIndex ".concat(sliderIndex, ", ").concat(existingSelectedSliderValue, " - ").concat(currentSliderValue, " : ").concat(difference)); //Below slider
 
       let newAllSliderArray = [...existingAllSliderArray];
       newAllSliderArray[sliderIndex] = currentSliderValue; //Find total of top sliders
@@ -61,40 +66,41 @@ function ReddevSlider(props) {
       if (sliderIndex > 0) {
         let totalOfTopSliders = getTotal(newAllSliderArray, 0, Number(sliderIndex + 1));
         balanceAvailable = totalValue - totalOfTopSliders > 0 ? totalValue - totalOfTopSliders : 0;
-        console.log("Moved sliderIndex ".concat(sliderIndex, " \nTotalOfTopSliders including from moved ").concat(totalOfTopSliders, " \nBalanceAvailable = ").concat(balanceAvailable, " "));
+        logger.log("Moved sliderIndex ".concat(sliderIndex, " \nTotalOfTopSliders including from moved ").concat(totalOfTopSliders, " \nBalanceAvailable = ").concat(balanceAvailable, " "));
       } else {
         balanceAvailable = totalValue - currentSliderValue;
-        console.log("Moved sliderIndex ".concat(sliderIndex, " \nThere is no top Sliders hence balanceAvailable : ").concat(totalValue, " - ").concat(currentSliderValue, " = ").concat(balanceAvailable, " "));
+        logger.log("Moved sliderIndex ".concat(sliderIndex, " \nThere is no top Sliders hence balanceAvailable : ").concat(totalValue, " - ").concat(currentSliderValue, " = ").concat(balanceAvailable, " "));
       }
 
       let total = getTotal(existingAllSliderArray, Number(sliderIndex + 1), existingAllSliderArray.length);
-      console.log("Following sliders total to find the % to +/- silderIndex [".concat(sliderIndex, " to ").concat(existingAllSliderArray.length - 1, "] = ").concat(total));
+      logger.log("Following sliders total to find the % to +/- silderIndex [".concat(sliderIndex, " to ").concat(existingAllSliderArray.length - 1, "] = ").concat(total));
       newAllSliderArray = divideProposionally(newAllSliderArray, existingAllSliderArray, total, balanceAvailable, difference, false);
       let totalOfNew = getTotal(newAllSliderArray, 0, newAllSliderArray.length);
-      console.log("Total after affecting below sliders ".concat(newAllSliderArray, " = ").concat(totalOfNew));
+      logger.log("Total after affecting below sliders ".concat(newAllSliderArray, " = ").concat(totalOfNew));
       let balanceAvailableNew = totalValue - totalOfNew;
-      console.log("is Still balanceAvailable?: ".concat(balanceAvailableNew)); //Adjust the balance to the last slider only when the slider is moved is not current
+      logger.log("is Still balanceAvailable?: ".concat(balanceAvailableNew)); //Adjust the balance to the last slider only when the slider is moved is not current
 
       if (balanceAvailableNew > 0 && sliderIndex !== newAllSliderArray.length - 1) {
         //TO-DO i check in while  loopneed to be removed as for now added for browser hanging when unconditional infinity loop
         let i = 1;
 
-        while (balanceAvailableNew > 1 && i < 1001) {
+        while (balanceAvailableNew > 1) {
           i++;
           newAllSliderArray = divideProposionally(newAllSliderArray, existingAllSliderArray, total, balanceAvailableNew, balanceAvailableNew + 1, true);
           existingAllSliderArray = [...newAllSliderArray];
-          console.log(existingAllSliderArray);
+          logger.log(existingAllSliderArray);
           balanceAvailableNew = totalValue - getTotal(newAllSliderArray, 0, newAllSliderArray.length);
 
-          if (i == 1001) {
+          if (i > 1001) {
             console.error("While loop reached infinity exit;");
+            break;
           }
         }
 
         if (balanceAvailableNew > 0 && sliderIndex !== existingAllSliderArray.length - 1) {
           let lastSlider = existingAllSliderArray.length - 1;
           let newValue = newAllSliderArray[lastSlider] + balanceAvailableNew;
-          console.log("then adjusted to sliderIndex ".concat(lastSlider, " with existingValue + balanceAvailable = ").concat(newAllSliderArray[lastSlider], " + ").concat(balanceAvailableNew, " = ").concat(newAllSliderArray[lastSlider] + balanceAvailableNew, " or min ").concat(sliders[lastSlider].min, "  "));
+          logger.log("then adjusted to sliderIndex ".concat(lastSlider, " with existingValue + balanceAvailable = ").concat(newAllSliderArray[lastSlider], " + ").concat(balanceAvailableNew, " = ").concat(newAllSliderArray[lastSlider] + balanceAvailableNew, " or min ").concat(sliders[lastSlider].min, "  "));
           newAllSliderArray[lastSlider] = newValue > sliders[lastSlider].min ? newValue : sliders[lastSlider].min;
         }
       }
@@ -104,12 +110,12 @@ function ReddevSlider(props) {
       if (latestTotalOfAllSliders !== totalValue) {
         //If total of latest change is more than 100 then decrease from i-1
         if (latestTotalOfAllSliders > totalValue) {
-          console.log("Total of all sliders ".concat(newAllSliderArray, " = ").concat(latestTotalOfAllSliders, " crossed the limit ").concat(totalValue, " hence decrease from i-1"));
+          logger.log("Total of all sliders ".concat(newAllSliderArray, " = ").concat(latestTotalOfAllSliders, " crossed the limit ").concat(totalValue, " hence decrease from i-1"));
           let valueToBeDecreased = latestTotalOfAllSliders - totalValue; //Decrease from i-1
 
           for (let i = sliderIndex - 1; i >= 0; i--) {
             if (newAllSliderArray[i] - sliders[i].min - valueToBeDecreased >= 0) {
-              console.log("Above slider can accomodate the entire over limit value itself ".concat(newAllSliderArray[i], " - ").concat(valueToBeDecreased, " = ").concat(newAllSliderArray[i] - valueToBeDecreased, " or min ").concat(sliders[i].min));
+              logger.log("Above slider can accomodate the entire over limit value itself ".concat(newAllSliderArray[i], " - ").concat(valueToBeDecreased, " = ").concat(newAllSliderArray[i] - valueToBeDecreased, " or min ").concat(sliders[i].min));
               let newValue = newAllSliderArray[i] - valueToBeDecreased;
               newAllSliderArray[i] = newValue > sliders[i].min ? newValue : sliders[i].min; //break if balance value can be adjusted within this slider, no need to go 
 
@@ -117,17 +123,17 @@ function ReddevSlider(props) {
             } else {
               valueToBeDecreased = valueToBeDecreased - (newAllSliderArray[i] - sliders[i].min);
               newAllSliderArray[i] = sliders[i].min;
-              console.log("Adjusted until min value ".concat(sliders[i].min, " and continue adjusting balance ").concat(valueToBeDecreased, " i-1"));
+              logger.log("Adjusted until min value ".concat(sliders[i].min, " and continue adjusting balance ").concat(valueToBeDecreased, " i-1"));
             }
           }
         } else {
-          console.log("Total of all sliders ".concat(newAllSliderArray, " = ").concat(latestTotalOfAllSliders, " not reached the limit ").concat(totalValue, " hence increase from i-1 only sliderIndex is last")); //If total of latest change is less than 100 then increase from i-1
+          logger.log("Total of all sliders ".concat(newAllSliderArray, " = ").concat(latestTotalOfAllSliders, " not reached the limit ").concat(totalValue, " hence increase from i-1 only sliderIndex is last")); //If total of latest change is less than 100 then increase from i-1
 
           let valueToBeIncreased = totalValue - latestTotalOfAllSliders; //Increase from i-1 if sliderIndex is last slider
 
           if (sliderIndex === existingAllSliderArray.length - 1) {
             for (let i = sliderIndex - 1; i >= 0; i--) {
-              console.log("".concat(newAllSliderArray[i], " + ").concat(valueToBeIncreased, " = ").concat(newAllSliderArray[i] + valueToBeIncreased));
+              logger.log("".concat(newAllSliderArray[i], " + ").concat(valueToBeIncreased, " = ").concat(newAllSliderArray[i] + valueToBeIncreased));
 
               if (newAllSliderArray[i] + valueToBeIncreased <= totalValue) {
                 let newValue = newAllSliderArray[i] + valueToBeIncreased;
@@ -159,12 +165,12 @@ function ReddevSlider(props) {
         if (balanceAvailable >= difference) {
           let newValue = newAllSliderArray[i] - Number(Math.floor(existingAllSliderArray[i] / total * difference));
           newAllSliderArray[i] = newValue > minSliderValue ? newValue : minSliderValue;
-          console.log("balanceAvailable ".concat(balanceAvailable, " >= difference ").concat(difference, " hence proposional with differnce \n").concat(newAllSliderArray[i], " - (").concat(existingAllSliderArray[i], "/").concat(total, ") * ").concat(difference, " = ").concat(newValue, " or ").concat(minSliderValue));
+          logger.log("balanceAvailable ".concat(balanceAvailable, " >= difference ").concat(difference, " hence proposional with differnce \n").concat(newAllSliderArray[i], " - (").concat(existingAllSliderArray[i], "/").concat(total, ") * ").concat(difference, " = ").concat(newValue, " or ").concat(minSliderValue));
         } else {
-          console.log("balanceAvailable ".concat(balanceAvailable, " < total ").concat(total, " hence proposional with balanceAvailable"));
+          logger.log("balanceAvailable ".concat(balanceAvailable, " < total ").concat(total, " hence proposional with balanceAvailable"));
           let newValue = (isLoop ? newAllSliderArray[i] : 0) + Number(Math.floor(existingAllSliderArray[i] / total * balanceAvailable));
           newAllSliderArray[i] = newValue > minSliderValue ? newValue : minSliderValue;
-          console.log("(".concat(existingAllSliderArray[i], "/").concat(total, ") * ").concat(balanceAvailable, " = ").concat(newValue, " or ").concat(minSliderValue));
+          logger.log("(".concat(existingAllSliderArray[i], "/").concat(total, ") * ").concat(balanceAvailable, " = ").concat(newValue, " or ").concat(minSliderValue));
         }
       }
     }
@@ -181,6 +187,7 @@ function ReddevSlider(props) {
       key: index,
       min: eachSlider.min,
       color: eachSlider.color,
+      sno: index,
       value: sliderValues[index] === undefined ? eachSlider.defaultValue : sliderValues[index],
       handleChange: props.handleChange ? props.handleChange.bind(this, index) : handleChange.bind(this, index),
       handleChangeCommited: props.handleChangeCommited ? props.handleChangeCommited : handleChangeCommited
