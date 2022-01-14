@@ -13,6 +13,8 @@ function ReddevSlider(props) {
     const [sliderValues, setSliderValues] = useState(props.sliderValues);
     //Manage only on updates to avoid intial load update
     const isInitialMount = useRef(true);
+
+    const totalValue = 100;
   
     const logger = {
       log: function (msg) {
@@ -27,7 +29,7 @@ function ReddevSlider(props) {
     }
 
     const handleChangeCommited = () => {
-        logger.log(`final committed value : ${sliderValues}`);
+        logger.log(`final committed value : ${sliderValues.reduce((a,b)=>a+b, 0)}`);
     }
     
     useEffect(() => {
@@ -38,105 +40,45 @@ function ReddevSlider(props) {
       if(isInitialMount.current){
         isInitialMount.current = false;
       }else {
-        logger.log(`Before moving silder value ${sliderValues}`);
-        let totalValue = 100;
+        logger.log(`Before moving silder, the values are ${sliderValues}`);
         let balanceAvailable = 0;
         let existingAllSliderArray = sliderValues;
         let existingSelectedSliderValue = existingAllSliderArray[sliderIndex];
         let difference = Math.abs(existingSelectedSliderValue - currentSliderValue);
-        logger.log(`Difference btw last and current value of moved sliderIndex ${sliderIndex}, ${existingSelectedSliderValue} - ${currentSliderValue} : ${difference}`)
-        //Below slider
+        logger.log(`Difference btw previous and current value of the moved sliderIndex {${sliderIndex}}: ${existingSelectedSliderValue} - ${currentSliderValue} : ${difference}`)
+        //Clone the existing slider values and only update the latest value of currently moved slider
         let newAllSliderArray = [...existingAllSliderArray];
         newAllSliderArray[sliderIndex] = currentSliderValue;
   
-        //Find total of top sliders
-        if(sliderIndex > 0) {
-          let totalOfTopSliders = getTotal(newAllSliderArray, 0, Number(sliderIndex+1));
-          balanceAvailable = (totalValue - totalOfTopSliders) > 0 ? (totalValue - totalOfTopSliders) : 0;
-          logger.log(`Moved sliderIndex ${sliderIndex} \nTotalOfTopSliders including from moved ${totalOfTopSliders} \nBalanceAvailable = ${balanceAvailable} `)
-        }else{
-          balanceAvailable = totalValue - currentSliderValue;
-          logger.log(`Moved sliderIndex ${sliderIndex} \nThere is no top Sliders hence balanceAvailable : ${totalValue} - ${currentSliderValue} = ${balanceAvailable} `)
-        }
+        //n - refers to the current sider
+        //While increasing or decreasing first we need to affect the n+1, n+2 etc and then based on balance start from n-1, n-2 etc 
+        //for that we need to calculate the available balance 
+        //hence total till moved - totalValue, which will be available balance need to be allocate for n+1, n+2 etc
+        let totalTillMoved = getTotal(newAllSliderArray, 0, Number(sliderIndex+1));
+        balanceAvailable = (totalValue - totalTillMoved) > 0 ? (totalValue - totalTillMoved) : 0;
+        logger.log(`Moved sliderIndex ${sliderIndex} \Total till moved ${totalTillMoved} \nBalanceAvailable = ${balanceAvailable} `)
+        
+        //Find total of sliderIndex+1 to n to calulate proposional value to +/- for each sliders
         let total = getTotal(existingAllSliderArray, Number(sliderIndex+1), existingAllSliderArray.length);
         logger.log(`Following sliders total to find the % to +/- silderIndex [${(sliderIndex)} to ${existingAllSliderArray.length-1}] = ${total}`)
         
+        //Proposinally affect n+1 sliders
         newAllSliderArray = divideProposionally(newAllSliderArray, existingAllSliderArray, total, balanceAvailable, difference, false);
-        
-        let totalOfNew = getTotal(newAllSliderArray, 0, newAllSliderArray.length);
-        logger.log(`Total after affecting below sliders ${newAllSliderArray} = ${totalOfNew}`);
-        let balanceAvailableNew = totalValue - totalOfNew;
-        logger.log(`is Still balanceAvailable?: ${balanceAvailableNew}`)
-        //Adjust the balance to the last slider only when the slider is moved is not current
-        if(balanceAvailableNew > 0 && sliderIndex !== (newAllSliderArray.length -1)){
-          //TO-DO i check in while  loopneed to be removed as for now added for browser hanging when unconditional infinity loop
-          let i = 1;
-          while(balanceAvailableNew > 1){
-            i++;
-            newAllSliderArray = divideProposionally(newAllSliderArray, existingAllSliderArray, total, balanceAvailableNew, balanceAvailableNew+1, true);
-            existingAllSliderArray = [...newAllSliderArray];
-            logger.log(existingAllSliderArray);
-            balanceAvailableNew = totalValue - getTotal(newAllSliderArray, 0, newAllSliderArray.length);
-            if(i > 1001){
-              console.error(`While loop reached infinity exit;`)
-              break;
-            }
-          }
-          
-          if(balanceAvailableNew > 0 && (sliderIndex !== (existingAllSliderArray.length - 1))){
-            let lastSlider = existingAllSliderArray.length - 1;
-            let newValue = newAllSliderArray[lastSlider]  + balanceAvailableNew;
-            logger.log(`then adjusted to sliderIndex ${lastSlider} with existingValue + balanceAvailable = ${newAllSliderArray[lastSlider]} + ${balanceAvailableNew} = ${newAllSliderArray[lastSlider] + balanceAvailableNew} or min ${sliders[lastSlider].min}  `)
-            newAllSliderArray[lastSlider] = newValue > sliders[lastSlider].min ? newValue : sliders[lastSlider].min;
-          } 
+
+        //Check balance exists, if so affect n-1 to 0
+        balanceAvailable = getTotal(newAllSliderArray, 0, newAllSliderArray.length);
+        if(balanceAvailable !== totalValue){
+         newAllSliderArray = affectAboveSliders(balanceAvailable, newAllSliderArray)
         }
         
-        
-        let latestTotalOfAllSliders = getTotal(newAllSliderArray, 0, newAllSliderArray.length);
-        if(latestTotalOfAllSliders !== totalValue){
-          //If total of latest change is more than 100 then decrease from i-1
-          if(latestTotalOfAllSliders > totalValue){
-            logger.log(`Total of all sliders ${newAllSliderArray} = ${latestTotalOfAllSliders} crossed the limit ${totalValue} hence decrease from i-1`); 
-            let valueToBeDecreased = latestTotalOfAllSliders - totalValue;
-            //Decrease from i-1
-            for(let i=sliderIndex-1;i>=0;i--){
-              if((newAllSliderArray[i]-sliders[i].min) - valueToBeDecreased >= 0) {
-                logger.log(`Above slider can accomodate the entire over limit value itself ${newAllSliderArray[i]} - ${valueToBeDecreased} = ${newAllSliderArray[i] - valueToBeDecreased} or min ${sliders[i].min}`)
-                let newValue = newAllSliderArray[i] - valueToBeDecreased;
-                newAllSliderArray[i] = newValue > sliders[i].min ? newValue : sliders[i].min;
-                //break if balance value can be adjusted within this slider, no need to go 
-                break;
-              }else{
-                valueToBeDecreased = valueToBeDecreased - (newAllSliderArray[i]-sliders[i].min);
-                newAllSliderArray[i] = sliders[i].min;
-                logger.log(`Adjusted until min value ${sliders[i].min} and continue adjusting balance ${valueToBeDecreased} i-1`)
-              }
-            }
-          } else {
-            logger.log(`Total of all sliders ${newAllSliderArray} = ${latestTotalOfAllSliders} not reached the limit ${totalValue} hence increase from i-1 only sliderIndex is last`); 
-            //If total of latest change is less than 100 then increase from i-1
-            let valueToBeIncreased = totalValue - latestTotalOfAllSliders;
-            //Increase from i-1 if sliderIndex is last slider
-            if(sliderIndex === (existingAllSliderArray.length -1)) {
-              for(let i=sliderIndex-1;i>=0;i--){
-                logger.log(`${newAllSliderArray[i]} + ${valueToBeIncreased} = ${newAllSliderArray[i] + valueToBeIncreased}`)
-                if(newAllSliderArray[i] + valueToBeIncreased <= totalValue) {
-                  let newValue = newAllSliderArray[i] + valueToBeIncreased;
-                  newAllSliderArray[i] = newValue > sliders[i].min ? newValue : sliders[i].min;
-                  //break if balance value can be adjusted within this slider, no need to go further
-                  break;
-                }
-              }
-            } else {
-  
-            }
+        //Adjust the uncontrollable balance within the slider
+        balanceAvailable = getTotal(newAllSliderArray, 0, newAllSliderArray.length);
+        if(balanceAvailable !== totalValue){
+          if(balanceAvailable > totalValue){
+            newAllSliderArray[sliderIndex] = newAllSliderArray[sliderIndex] - (balanceAvailable - totalValue);
+          }else{
+            newAllSliderArray[sliderIndex] = newAllSliderArray[sliderIndex] + (totalValue - balanceAvailable);
           }
-        }
-        
-        //Adjust the slider not to reach more than min of all other sliders
-        latestTotalOfAllSliders = getTotal(newAllSliderArray, 0, newAllSliderArray.length);
-        if(latestTotalOfAllSliders > totalValue){
-          newAllSliderArray[sliderIndex] = newAllSliderArray[sliderIndex] - (latestTotalOfAllSliders - totalValue);
         }
         setSliderValues(newAllSliderArray);
       }
@@ -144,9 +86,14 @@ function ReddevSlider(props) {
     
     
     const divideProposionally = (newAllSliderArray, existingAllSliderArray, total, balanceAvailable, difference, isLoop) => {
+      let previousBalance = balanceAvailable;
+      //Affect n+1 sliders proprsionally
       for(let i=sliderIndex+1;i<existingAllSliderArray.length;i++){
         if(total) {
           let minSliderValue = sliders[i].min;
+          //If balanceAvailable is greater than the difference the calculate the proposional value based on difference
+          //else calulate by balanceAvailable
+          //whichever is lower
           if(balanceAvailable >= difference){
             let newValue = newAllSliderArray[i] - Number(Math.floor((existingAllSliderArray[i]/total) * difference));
             newAllSliderArray[i] = newValue > minSliderValue ? newValue : minSliderValue;
@@ -159,9 +106,70 @@ function ReddevSlider(props) {
           }
         }
       }
+      //Check if still have balance and has to be adjusted
+      balanceAvailable = totalValue - getTotal(newAllSliderArray, 0, newAllSliderArray.length);
+      logger.log(`is Still balanceAvailable?: ${balanceAvailable}`)
+      //Continue adjust when slider is not the last the function divideProposionally is start from n+1
+      if(balanceAvailable > 0 && sliderIndex !== (newAllSliderArray.length -1)){
+        //Small balance write-off to last slider
+        if(balanceAvailable === 1){
+          let lastSlider = existingAllSliderArray.length - 1;
+          let newValue = newAllSliderArray[lastSlider]  + balanceAvailable;
+          logger.log(`then adjusted to sliderIndex ${lastSlider} with existingValue + balanceAvailable = ${newAllSliderArray[lastSlider]} + ${balanceAvailable} = ${newAllSliderArray[lastSlider] + balanceAvailable} or min ${sliders[lastSlider].min}  `)
+          newAllSliderArray[lastSlider] = newValue > sliders[lastSlider].min ? newValue : sliders[lastSlider].min;
+          return newAllSliderArray;
+        } 
+        //more than $1 can be computed again until decent proposion
+        if(balanceAvailable > 1){
+          //break proposional functional on repeated value
+          if(balanceAvailable === previousBalance){
+            console.error(`Balance cannot be proposionally divided exit loop;`)
+            return newAllSliderArray;
+          }
+          newAllSliderArray = divideProposionally(newAllSliderArray, newAllSliderArray, total, balanceAvailable, balanceAvailable+1, true);
+        }
+      }
       return newAllSliderArray;
     }
   
+    const affectAboveSliders = (balanceAvailable, newAllSliderArray) => {
+       //If total of latest change is more than 100 then decrease from i-1
+       if(balanceAvailable > totalValue){
+        logger.log(`Total of all sliders ${newAllSliderArray} = ${balanceAvailable} crossed the limit ${totalValue} hence decrease from i-1`); 
+        let valueToBeDecreased = balanceAvailable - totalValue;
+        //Decrease from i-1
+        for(let i=sliderIndex-1;i>=0;i--){
+          if((newAllSliderArray[i]-sliders[i].min) - valueToBeDecreased >= 0) {
+            logger.log(`sliderIndex ${i} slider can accomodate the entire over limit value within itself ${newAllSliderArray[i]} - ${valueToBeDecreased} = ${newAllSliderArray[i] - valueToBeDecreased}`)
+            let newValue = newAllSliderArray[i] - valueToBeDecreased;
+            newAllSliderArray[i] = newValue > sliders[i].min ? newValue : sliders[i].min;
+            //break if balance value can be adjusted within this slider, no need to go 
+            break;
+          }else{
+            valueToBeDecreased = valueToBeDecreased - (newAllSliderArray[i]-sliders[i].min);
+            newAllSliderArray[i] = sliders[i].min;
+            logger.log(`Adjusted until min value ${sliders[i].min} in sliderIndex {${i}} and continue adjusting balance ${valueToBeDecreased} in sliderIndex {${i-1}}`)
+          }
+        }
+      } else {
+        logger.log(`Total of all sliders ${newAllSliderArray} = ${balanceAvailable} not reached the limit ${totalValue} hence increase from sliderIndex {${sliderIndex-1}} till sliderIndex {0}`); 
+        //If total of latest change is less than 100 then increase from i-1
+        let valueToBeIncreased = totalValue - balanceAvailable;
+        //Increase from i-1 if sliderIndex is last slider
+        if(sliderIndex === (newAllSliderArray.length -1)) {
+          for(let i=sliderIndex-1;i>=0;i--){
+            logger.log(`${newAllSliderArray[i]} + ${valueToBeIncreased} = ${newAllSliderArray[i] + valueToBeIncreased}`)
+            if(newAllSliderArray[i] + valueToBeIncreased <= totalValue) {
+              let newValue = newAllSliderArray[i] + valueToBeIncreased;
+              newAllSliderArray[i] = newValue > sliders[i].min ? newValue : sliders[i].min;
+              //break if balance value can be adjusted within this slider, no need to go further
+              break;
+            }
+          }
+        } 
+      }
+      return newAllSliderArray
+    }
   
     const getTotal = (list, start, end) => {
       return list.slice(start,end).reduce((a,b)=>a+b,0)
